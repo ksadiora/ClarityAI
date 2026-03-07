@@ -1,70 +1,76 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  display: flex;
-  min-height: 100vh;
-  background: #0a0c11;
-  color: #e5e7eb;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e8e8ed; min-height: 100vh; }
+.dashboard { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+
+header { text-align: center; margin-bottom: 40px; }
+header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+header p { color: #8888a0; font-size: 15px; }
+.manipulation-warning-banner { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; border-radius: 12px; padding: 20px; margin-bottom: 32px; }
+.manipulation-warning-banner h2 { color: #ef4444; font-size: 18px; margin-bottom: 8px; }
+.manipulation-warning-banner p { color: #e8e8ed; margin-bottom: 12px; }
+
+.overview { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+@media (max-width: 600px) { .overview { grid-template-columns: 1fr; } }
+.metric-card {
+  background: #12121a; border: 1px solid #2a2a3a; border-radius: 12px;
+  padding: 24px; text-align: center;
 }
-.sidebar {
-  width: 200px;
-  background: #0f1117;
-  border-right: 1px solid #1f2937;
-  padding: 24px 16px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
+.metric-card h3 { font-size: 13px; color: #8888a0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.big-score { font-size: 48px; font-weight: 700; }
+.big-score.low { color: #22c55e; }
+.big-score.med { color: #eab308; }
+.big-score.high { color: #ef4444; }
+.creator-suggestion { display: block; padding: 10px; margin-bottom: 8px; background: rgba(124,92,255,0.1); border-radius: 8px; border: 1px solid rgba(124,92,255,0.2); text-decoration: none; color: inherit; transition: background 0.2s; }
+.creator-suggestion:hover { background: rgba(124,92,255,0.18); }
+.creator-suggestion:last-child { margin-bottom: 0; }
+.creator-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.creator-platform { font-size: 11px; color: #a78bfa; text-transform: capitalize; }
+.creator-reason { font-size: 12px; color: #8888a0; margin-top: 4px; }
+.mechanic-badge {
+  display: inline-block; padding: 8px 16px; border-radius: 8px;
+  font-size: 18px; font-weight: 600; text-transform: capitalize;
+  background: rgba(124, 92, 255, 0.2); color: #a78bfa;
 }
-.brand { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-nav { display: flex; flex-direction: column; gap: 4px; }
-.nav-item {
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.2s;
+.hint { font-size: 12px; color: #8888a0; margin-top: 8px; }
+
+section { margin-bottom: 40px; }
+section h2 { font-size: 18px; margin-bottom: 16px; }
+
+.time-bars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+.time-bar { display: flex; align-items: center; gap: 12px; }
+.time-bar .label { width: 90px; font-size: 14px; }
+.time-bar .bar-wrap { flex: 1; height: 20px; background: #1f1f28; border-radius: 6px; overflow: hidden; }
+.time-bar .bar { height: 100%; border-radius: 6px; background: #7c5cff; transition: width 0.3s; }
+.time-bar .val { width: 60px; text-align: right; font-size: 14px; font-weight: 600; color: #a78bfa; }
+.platform-bars { display: flex; flex-direction: column; gap: 12px; }
+.platform-bar {
+  display: flex; align-items: center; gap: 12px;
 }
-.nav-item:hover { background: #1f2937; color: #e5e7eb; }
-.nav-item.active { background: #1d4ed8; color: white; }
-.main { flex: 1; padding: 32px; overflow-y: auto; }
-.section { display: none; }
-.section.active { display: block; }
-h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-.subtitle { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.kpi {
-  background: #0f1117;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 16px;
+.platform-bar .label { width: 80px; font-size: 14px; }
+.platform-bar .bar-wrap { flex: 1; height: 24px; background: #1f1f28; border-radius: 6px; overflow: hidden; }
+.platform-bar .bar { height: 100%; border-radius: 6px; transition: width 0.3s; }
+.platform-bar .val { width: 40px; text-align: right; font-size: 14px; font-weight: 600; }
+
+.mechanic-chart { display: flex; flex-wrap: wrap; gap: 12px; }
+.mechanic-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: #12121a; border-radius: 8px;
+  border: 1px solid #2a2a3a;
 }
-.kpi-value { font-size: 28px; font-weight: 800; color: #f9fafb; }
-.kpi-label { font-size: 11px; color: #6b7280; margin-top: 4px; }
-.no-data { color: #6b7280; font-size: 13px; }
-.settings-form { display: flex; flex-direction: column; gap: 16px; max-width: 400px; }
-.settings-form label { font-size: 13px; color: #9ca3af; display: flex; flex-direction: column; gap: 6px; }
-.settings-form input {
-  background: #1f2937;
-  border: 1px solid #374151;
-  color: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
+.mechanic-item .dot { width: 10px; height: 10px; border-radius: 50%; }
+.mechanic-item .name { text-transform: capitalize; font-size: 14px; }
+.mechanic-item .count { color: #8888a0; font-size: 12px; margin-left: 4px; }
+
+.drift-chart { padding: 24px; background: #12121a; border-radius: 12px; border: 1px solid #2a2a3a; }
+.drift-chart.empty { color: #8888a0; text-align: center; }
+.organic-note { padding: 16px; background: #12121a; border-radius: 8px; color: #8888a0; font-size: 14px; }
+
+.preferences-summary { font-size: 16px; margin-bottom: 12px; color: #e8e8ed; }
+.category-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: rgba(124, 92, 255, 0.15);
+  border-radius: 20px; font-size: 14px; color: #a78bfa;
+  border: 1px solid rgba(124, 92, 255, 0.3);
 }
-.settings-hint { font-size: 12px; color: #6b7280; }
-.settings-hint a { color: #60a5fa; text-decoration: none; }
-.settings-hint a:hover { text-decoration: underline; }
-button {
-  background: #1d4ed8;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-button:hover { opacity: 0.9; }
-button.danger { background: #7f1d1d; }
+.category-pill .count { font-size: 11px; color: #8888a0; }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Settings | Manipulation Auditor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #0f0f14; color: #e8e8ed; padding: 24px; max-width: 480px; }
+    h1 { font-size: 20px; margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-size: 13px; color: #a0a0b8; }
+    input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #2a2a3a; background: #1a1a22; color: #e8e8ed; margin-bottom: 16px; font-size: 14px; }
+    button { padding: 10px 20px; background: #7c5cff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    .saved { color: #22c55e; font-size: 13px; margin-top: 12px; }
+    p { font-size: 12px; color: #8888a0; margin-bottom: 16px; }
+    a { color: #7c5cff; }
+  </style>
+</head>
+<body>
+  <h1>Settings</h1>
+  <p>Add an API key for AI-powered classification. Without it, the extension uses heuristic fallbacks (less accurate).</p>
+  <label>Provider</label>
+  <select id="provider">
+    <option value="gemini">Google (Gemini)</option>
+    <option value="anthropic">Anthropic (Claude)</option>
+    <option value="openai">OpenAI (GPT-4o-mini)</option>
+  </select>
+  <label>API Key</label>
+  <input type="password" id="apiKey" placeholder="Paste your API key">
+  <button id="save">Save</button>
+  <div class="saved" id="saved" style="display:none">Settings saved.</div>
+  <p style="margin-top: 20px;">Get keys: <a href="https://aistudio.google.com/apikey" target="_blank">Gemini</a> | <a href="https://console.anthropic.com/" target="_blank">Anthropic</a> | <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a></p>
+  <script src="options.js"></script>
+</body>
+</html>

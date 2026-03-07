@@ -1,37 +1,62 @@
 {
   "manifest_version": 3,
-  "name": "Clarity — Algorithmic Manipulation Auditor",
+  "name": "Algorithmic Manipulation Auditor",
+  "short_name": "Manipulation Auditor",
+  "description": "Reverse-engineer what social media algorithms are optimizing you for. See your manipulation profile in real time.",
   "version": "1.0.0",
-  "description": "Audits what social media algorithms are optimizing you for.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
-    "alarms"
+    "tabs"
   ],
   "host_permissions": [
-    "https://www.youtube.com/*",
+    "https://*.youtube.com/*",
+    "https://*.twitter.com/*",
+    "https://*.x.com/*",
+    "https://*.tiktok.com/*",
+    "https://api.anthropic.com/*",
+    "https://api.openai.com/*",
     "https://generativelanguage.googleapis.com/*"
   ],
+  "options_ui": {
+    "page": "options/options.html"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Algorithmic Manipulation Auditor"
+  },
   "background": {
-    "service_worker": "background/service-worker.js"
+    "service_worker": "background/background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["content-scripts/scraper-core.js", "content-scripts/youtube.js", "overlay/overlay.js"],
-      "css": ["overlay/overlay.css"],
+      "matches": ["https://*.youtube.com/*"],
+      "js": ["shared/shared.js", "content/youtube-scraper.js", "content/content-core.js"],
+      "css": ["content/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
+      "js": ["shared/shared.js", "content/twitter-scraper.js", "content/content-core.js"],
+      "css": ["content/overlay.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.tiktok.com/*"],
+      "js": ["shared/shared.js", "content/tiktok-scraper.js", "content/content-core.js"],
+      "css": ["content/overlay.css"],
       "run_at": "document_idle"
     }
   ],
-  "action": {
-    "default_popup": "popup/popup.html",
-    "default_title": "Clarity — Algorithmic Manipulation Auditor"
-  },
-  "options_page": "dashboard/dashboard.html",
   "web_accessible_resources": [
     {
-      "resources": ["overlay/overlay.css"],
+      "resources": ["icons/*", "dashboard/dashboard.html"],
       "matches": ["<all_urls>"]
     }
   ]
