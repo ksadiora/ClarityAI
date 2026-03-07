@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clarity</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="header">
+    <span class="logo">◎ Clarity</span>
+    <span class="tagline">Algorithmic Manipulation Auditor</span>
+  </div>
+
+  <div class="current-platform" id="currentPlatform">
+    <span class="platform-name" id="platformName">Not on a tracked platform</span>
+  </div>
+
+  <div class="score-section">
+    <div class="score-ring" id="scoreRing">
+      <span class="score-number" id="scoreNumber">—</span>
+      <span class="score-label">manipulation<br>intensity</span>
+    </div>
+  </div>
+
+  <div class="mechanic-section">
+    <div class="mechanic-label">Primary mechanic detected:</div>
+    <div class="mechanic-value" id="dominantMechanic">—</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-value" id="itemsToday">0</div>
+      <div class="stat-label">items analyzed today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="recommendedRatio">—</div>
+      <div class="stat-label">algorithmic injection</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="openDashboard">View Full Report →</button>
+    <label class="toggle">
+      <input type="checkbox" id="overlayToggle" checked />
+      <span>Live overlay</span>
+    </label>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

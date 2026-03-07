@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clarity — Full Report</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">◎ Clarity</div>
+    <nav>
+      <a href="#" class="nav-item active" data-section="overview">Overview</a>
+      <a href="#" class="nav-item" data-section="settings">Settings</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <section id="section-overview" class="section active">
+      <h1>Your Weekly Manipulation Profile</h1>
+      <p class="subtitle" id="reportSubtitle">Last 7 days across all platforms</p>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-value" id="kpiTotalItems">0</div>
+          <div class="kpi-label">Content Items Analyzed</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value" id="kpiAvgIntensity">—</div>
+          <div class="kpi-label">Avg Manipulation Intensity</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value" id="kpiAlgorithmicRatio">—</div>
+          <div class="kpi-label">Algorithmically Injected</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value" id="kpiDominantMechanic">—</div>
+          <div class="kpi-label">Dominant Mechanic</div>
+        </div>
+      </div>
+      <p class="no-data" id="overviewNoData">No data yet. Browse YouTube, Twitter/X, or Reddit with the extension to build your profile.</p>
+    </section>
+
+    <section id="section-settings" class="section">
+      <h1>Settings</h1>
+      <div class="settings-form">
+        <label>API Key
+          <input type="password" id="apiKeyInput" placeholder="sk-ant-... or sk-..." />
+        </label>
+        <p class="settings-hint">Anthropic or OpenAI key for content classification (optional for later).</p>
+        <button id="saveSettings">Save Settings</button>
+        <button id="clearData" class="danger">Clear All Data</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Clarity — Algorithmic Manipulation Auditor",
+  "version": "1.0.0",
+  "description": "Audits what social media algorithms are optimizing you for.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Clarity — Algorithmic Manipulation Auditor"
+  },
+  "options_page": "dashboard/dashboard.html"
+}
