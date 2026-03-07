@@ -5,14 +5,34 @@
   "description": "Audits what social media algorithms are optimizing you for.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content-scripts/scraper-core.js", "content-scripts/youtube.js", "overlay/overlay.js"],
+      "css": ["overlay/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Clarity — Algorithmic Manipulation Auditor"
   },
-  "options_page": "dashboard/dashboard.html"
+  "options_page": "dashboard/dashboard.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay/overlay.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
