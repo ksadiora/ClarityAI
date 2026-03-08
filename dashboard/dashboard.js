@@ -23,6 +23,61 @@ async function loadData() {
   return { history, minutes };
 }
 
+function getDemoData() {
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const platforms = ['youtube', 'youtube', 'youtube', 'twitter', 'twitter', 'tiktok'];
+  const mechanics = ['informational', 'neutral', 'curiosity_gap', 'outrage', 'humor', 'informational', 'neutral', 'curiosity_gap', 'fear', 'controversy'];
+  const categories = ['education', 'entertainment', 'news', 'gaming', 'how_to', 'comedy', 'science', 'politics', 'lifestyle'];
+  const samples = [
+    { text: 'How photosynthesis works – science explained', m: 'informational', cat: 'education', i: 15 },
+    { text: 'You won\'t believe what happened next', m: 'curiosity_gap', cat: 'entertainment', i: 72 },
+    { text: 'Breaking: Major news event coverage', m: 'neutral', cat: 'news', i: 25 },
+    { text: 'Best gaming setup 2024', m: 'neutral', cat: 'gaming', i: 30 },
+    { text: 'Tutorial: Learn to code in 10 minutes', m: 'informational', cat: 'how_to', i: 10 },
+    { text: 'Funny moments compilation', m: 'humor', cat: 'comedy', i: 35 },
+    { text: 'Space discovery shocks scientists', m: 'curiosity_gap', cat: 'science', i: 58 },
+    { text: 'Politician controversy explained', m: 'outrage', cat: 'politics', i: 78 },
+    { text: 'Day in my life vlog', m: 'neutral', cat: 'lifestyle', i: 22 },
+    { text: 'They don\'t want you to know this secret', m: 'curiosity_gap', cat: 'entertainment', i: 85 },
+    { text: 'Calm study with me', m: 'informational', cat: 'education', i: 12 },
+    { text: 'Reacting to viral video', m: 'humor', cat: 'entertainment', i: 42 },
+    { text: 'Health tips from experts', m: 'informational', cat: 'lifestyle', i: 18 },
+    { text: 'Outrageous take on current events', m: 'outrage', cat: 'politics', i: 82 },
+    { text: 'Relaxing ASMR sounds', m: 'neutral', cat: 'entertainment', i: 20 },
+  ];
+  const history = [];
+  // Weekly base intensity for downward trend: Week 1 (oldest) high → Week 4 (newest) low
+  const weeklyBase = [38, 52, 65, 78]; // newest week (w=0) to oldest (w=3)
+  for (let i = 0; i < 65; i++) {
+    const w = Math.floor(i / 16) % 4;
+    const t = now - (w * weekMs + (i % 16) * (weekMs / 18));
+    const s = samples[i % samples.length];
+    const platform = platforms[i % platforms.length];
+    const baseIntensity = weeklyBase[w];
+    const variance = (i % 7) - 3;
+    history.push({
+      platform,
+      text: s.text + ' – item ' + (i + 1),
+      classification: {
+        manipulation_mechanic: s.m,
+        manipulation_intensity: Math.min(95, Math.max(15, baseIntensity + variance)),
+        content_category: categories[i % categories.length],
+      },
+      timestamp: t,
+      isRecommended: i % 10 < 7,
+    });
+  }
+  const minutes = { youtube: 52, twitter: 28, tiktok: 41 };
+  const tips = [
+    { title: 'Turn off autoplay', body: 'On YouTube and TikTok, disable autoplay so you choose what to watch next instead of the algorithm.' },
+    { title: 'Use "Not interested"', body: 'Tap "Not interested" on content you don\'t want. It trains the feed over time.' },
+    { title: 'Prefer Subscriptions over Home', body: 'On YouTube, open Subscriptions first. On X and TikTok, check Following before For You.' },
+    { title: 'Set a daily time cap', body: 'Use a timer or phone settings to limit time per app. Even a soft limit helps you scroll more intentionally.' },
+  ];
+  return { history, minutes, tips };
+}
+
 function inferCategoryFromText(text) {
   const t = (text || '').toLowerCase();
   if (/\bnews\b|breaking|headline|reporter|cnn|fox|bbc|reuters/i.test(t)) return 'news';
@@ -98,16 +153,24 @@ function computeAggregates(history) {
     count++;
   });
 
+  let totalRecommended = 0;
   Object.keys(byPlatform).forEach(p => {
     byPlatform[p].avgScore = Math.round(byPlatform[p].intensity / byPlatform[p].count);
     const total = byPlatform[p].count;
     const rec = byPlatform[p].recommended || 0;
+    totalRecommended += rec;
     byPlatform[p].recommendedRatio = total ? rec / total : 0;
   });
+  const algorithmShare = count ? totalRecommended / count : 0;
 
   const topMechanic = Object.entries(byMechanic).sort((a, b) => b[1] - a[1])[0];
   const topCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const overallScore = count ? Math.round(totalIntensity / count) : 0;
+
+  let scoreInterpretation = '';
+  if (count && overallScore >= 55) scoreInterpretation = 'Your feed is heavily optimized for engagement.';
+  else if (count && overallScore >= 35) scoreInterpretation = 'Your feed mixes calm and engagement-driven content.';
+  else if (count && overallScore < 35) scoreInterpretation = 'Your feed leans toward calmer, more genuine content.';
 
   const weekMs = 7 * 24 * 60 * 60 * 1000;
   for (let w = 0; w < 4; w++) {
@@ -145,6 +208,8 @@ function computeAggregates(history) {
     weekly,
     manipulationWarning,
     healthierAlternatives,
+    algorithmShare,
+    scoreInterpretation,
   };
 }
 
@@ -158,19 +223,33 @@ function formatMins(m) {
 
 async function render() {
   let history = [], minutes = {}, tips = [];
-  try {
-    const data = await loadData();
+  const isDemo = new URLSearchParams(window.location.search).get('demo') === '1';
+  if (isDemo) {
+    const data = getDemoData();
     history = data.history || [];
     minutes = data.minutes || {};
-  } catch (e) {
-    console.error('MA: loadData failed', e);
+    tips = Array.isArray(data.tips) ? data.tips : [];
+  } else {
+    try {
+      const data = await loadData();
+      history = data.history || [];
+      minutes = data.minutes || {};
+    } catch (e) {
+      console.error('MA: loadData failed', e);
+    }
+    try {
+      const aggResponse = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_AGGREGATES' }, r));
+      tips = Array.isArray(aggResponse?.tips) ? aggResponse.tips : [];
+    } catch (e) {}
   }
-  try {
-    const aggResponse = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_AGGREGATES' }, r));
-    tips = Array.isArray(aggResponse?.tips) ? aggResponse.tips : [];
-  } catch (e) {}
   const agg = computeAggregates(history);
   const mins = minutes || { youtube: 0, twitter: 0, tiktok: 0 };
+
+  const getStartedEl = document.getElementById('getStartedBlock');
+  if (getStartedEl) getStartedEl.style.display = agg.totalItems < 3 ? 'block' : 'none';
+
+  const demoBanner = document.getElementById('demoBanner');
+  if (demoBanner) demoBanner.style.display = isDemo ? 'block' : 'none';
 
   const scoreEl = document.getElementById('overallScore');
   scoreEl.textContent = agg.totalItems ? agg.overallScore : '--';
@@ -179,6 +258,20 @@ async function render() {
     if (agg.overallScore > 60) scoreEl.classList.add('high');
     else if (agg.overallScore > 35) scoreEl.classList.add('med');
     else scoreEl.classList.add('low');
+  }
+  const interpretationEl = document.getElementById('scoreInterpretation');
+  if (interpretationEl) interpretationEl.textContent = agg.scoreInterpretation || '';
+  interpretationEl?.classList.toggle('visible', !!agg.scoreInterpretation);
+  const algorithmShareEl = document.getElementById('algorithmShareLine');
+  if (algorithmShareEl) {
+    if (agg.totalItems && typeof agg.algorithmShare === 'number') {
+      const pct = Math.round(agg.algorithmShare * 100);
+      algorithmShareEl.textContent = `${pct}% of what you see is chosen by the algorithm (not people you follow).`;
+      algorithmShareEl.classList.add('visible');
+    } else {
+      algorithmShareEl.textContent = '';
+      algorithmShareEl.classList.remove('visible');
+    }
   }
 
   const warnBanner = document.getElementById('manipulationWarningBanner');
@@ -249,7 +342,7 @@ async function render() {
         <span class="val">${d.avgScore}</span>
       </div>`;
     })
-    .join('') || '<p class="hint">No platform data yet</p>';
+    .join('') || '<p class="hint">Browse YouTube, X, or TikTok for a few minutes to see your breakdown.</p>';
 
   const mechanicChart = document.getElementById('mechanicChart');
   mechanicChart.innerHTML = Object.entries(agg.byMechanic)
@@ -259,7 +352,7 @@ async function render() {
       <span class="name">${name === 'ai_generated' ? 'AI' : name.replace(/_/g, ' ')}</span>
       <span class="count">(${count})</span>
     </div>`)
-    .join('') || '<p class="hint">No mechanic data yet</p>';
+    .join('') || '<p class="hint">Browse YouTube, X, or TikTok to see which manipulation mechanics appear in your feed.</p>';
 
   // Preferences / categories section
   document.getElementById('preferencesSummary').textContent =
@@ -269,19 +362,19 @@ async function render() {
       <span>${CATEGORY_LABELS[name] || name.replace(/_/g, ' ')}</span>
       <span class="count">${count}</span>
     </div>`)
-    .join('') || '<p class="hint">No data yet</p>';
+    .join('') || '<p class="hint">Browse for a few minutes to see your content preferences.</p>';
 
   const driftChart = document.getElementById('driftChart');
   const hasDrift = agg.weekly.some(w => w.score != null);
   if (!hasDrift) {
-    driftChart.innerHTML = '<div class="empty">Collect more data over time to see algorithmic drift</div>';
+    driftChart.innerHTML = '<div class="empty">Browse for a few minutes to build history, then check back to see if your feed is drifting over time.</div>';
     driftChart.classList.add('empty');
   } else {
     driftChart.classList.remove('empty');
     const weeks = [...agg.weekly].reverse();
-    const w = 400;
+    const w = 420;
     const h = 180;
-    const pad = { left: 36, right: 16, top: 12, bottom: 28 };
+    const pad = { left: 36, right: 36, top: 12, bottom: 28 };
     const x0 = pad.left;
     const x1 = w - pad.right;
     const y0 = pad.top;
@@ -295,7 +388,7 @@ async function render() {
       points.length > 0
         ? points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${yScale(p.score)}`).join(' ')
         : '';
-    const xLabels = weeks.map((_, i) => `<text x="${xScale(i)}" y="${h - 6}" class="drift-x-label" text-anchor="middle">Week ${4 - i}</text>`).join('');
+    const xLabels = weeks.map((_, i) => `<text x="${xScale(i)}" y="${h - 6}" class="drift-x-label" text-anchor="middle">Week ${i + 1}</text>`).join('');
     driftChart.innerHTML = `
       <svg class="drift-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
         <line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" class="drift-axis"/>
@@ -353,7 +446,7 @@ async function render() {
           `).join('')}
         </div>`;
     } else {
-      organicEl.innerHTML = '<p class="hint">Browse with the extension to see organic vs algorithmic breakdown per platform.</p>';
+      organicEl.innerHTML = '<p class="hint">Browse YouTube, X, or TikTok with the extension to see what share of your feed is algorithm vs. people you follow.</p>';
     }
   }
 }

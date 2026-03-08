@@ -11,7 +11,14 @@
     <header>
       <h1>Your Manipulation Profile</h1>
       <p>What social platforms are optimizing you for — derived from your personal feed data</p>
+      <p class="header-impact">See how much of your feed is algorithm-driven and how it affects you.</p>
     </header>
+    <div class="demo-banner" id="demoBanner" style="display:none">You're viewing a sample profile. <a href="dashboard.html">View your real data</a></div>
+    <div class="get-started-block" id="getStartedBlock" style="display:none">
+      <p class="get-started-title">Why Clairity?</p>
+      <p>Clairity shows how much of your feed is chosen by algorithms and how manipulative that content is. Browse YouTube, X, or TikTok for a few minutes to build your profile.</p>
+      <p class="get-started-hint">Turn on the <strong>real-time overlay</strong> in the extension popup to see tags on each feed item.</p>
+    </div>
     <section class="manipulation-warning-banner" id="manipulationWarningBanner" style="display:none">
       <h2>Your feed is highly manipulative</h2>
       <p>Consider exploring calmer, more constructive content. Try these healthier alternatives:</p>
@@ -21,6 +28,8 @@
       <div class="metric-card">
         <h3>Overall manipulation intensity</h3>
         <div class="big-score" id="overallScore">--</div>
+        <p class="score-interpretation" id="scoreInterpretation"></p>
+        <p class="algorithm-share-line" id="algorithmShareLine"></p>
         <p class="hint">0 = genuine, 100 = highly manipulative</p>
       </div>
       <div class="metric-card suggestions-card">
@@ -63,6 +72,7 @@
       <p class="hint">What % comes from people you follow vs algorithm recommendations</p>
       <div class="organic-note" id="organicNote">Tracked per platform — expand scrapers for precise data</div>
     </section>
+    <footer class="dashboard-footer"><span class="dashboard-brand">Clairity</span> — Making algorithms visible</footer>
   </div>
   <script src="dashboard.js"></script>
 </body>

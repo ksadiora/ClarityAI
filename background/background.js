@@ -449,9 +449,10 @@ function computeAggregates(history) {
     const age = now - (item.timestamp || 0);
     const recency = age < dayMs ? 2 : age < 7 * dayMs ? 1.5 : 1;
 
-    byPlatform[p] = byPlatform[p] || { count: 0, intensity: 0 };
+    byPlatform[p] = byPlatform[p] || { count: 0, intensity: 0, recommended: 0 };
     byPlatform[p].count++;
     byPlatform[p].intensity += i;
+    if (item.isRecommended !== false) byPlatform[p].recommended = (byPlatform[p].recommended || 0) + 1;
 
     byMechanic[m] = (byMechanic[m] || 0) + 1;
     byCategory[cat] = (byCategory[cat] || 0) + recency;
@@ -459,13 +460,23 @@ function computeAggregates(history) {
     count++;
   });
 
+  let totalRecommended = 0;
   Object.keys(byPlatform).forEach(p => {
     byPlatform[p].avgScore = Math.round(byPlatform[p].intensity / byPlatform[p].count);
+    const rec = byPlatform[p].recommended || 0;
+    totalRecommended += rec;
+    byPlatform[p].recommendedRatio = byPlatform[p].count ? rec / byPlatform[p].count : 0;
   });
+  const algorithmShare = count ? totalRecommended / count : 0;
 
   const topMechanic = Object.entries(byMechanic).sort((a, b) => b[1] - a[1])[0];
   const topCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const overallScore = count ? Math.round(totalIntensity / count) : 0;
+
+  let scoreInterpretation = '';
+  if (count && overallScore >= 55) scoreInterpretation = 'Your feed is heavily optimized for engagement.';
+  else if (count && overallScore >= 35) scoreInterpretation = 'Your feed mixes calm and engagement-driven content.';
+  else if (count && overallScore < 35) scoreInterpretation = 'Your feed leans toward calmer, more genuine content.';
 
   const preferencesSummary = topCategories.length
     ? `You're mostly seeing: ${topCategories.map(([n]) => n.replace(/_/g, ' ')).join(', ')}`
@@ -491,6 +502,8 @@ function computeAggregates(history) {
     totalItems: count,
     manipulationWarning,
     healthierAlternatives,
+    algorithmShare,
+    scoreInterpretation,
   };
 }
 

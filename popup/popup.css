@@ -20,6 +20,8 @@ h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .score-circle.med { background: rgba(234,179,8,0.2); border-color: #eab308; color: #eab308; }
 .score-circle.high { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #ef4444; }
 .score-label { font-size: 11px; color: #8888a0; }
+.score-extra { font-size: 11px; color: #a78bfa; margin-top: 4px; display: none; }
+.popup-empty-hint { font-size: 11px; color: #8888a0; margin-top: 6px; }
 
 .stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 16px; }
 .stat { text-align: center; }

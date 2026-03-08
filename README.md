@@ -2,6 +2,12 @@
 
 A browser extension that reverse-engineers what social media algorithms are optimizing you for. It observes what gets served to you, classifies each item with AI, and builds a personal manipulation profile.
 
+## Impact
+
+Most people have no idea how much of their feed is chosen by algorithms (vs. people they follow) or how much of it is optimized for engagement rather than genuine value. Clairity makes that invisible infrastructure visible: you see at a glance what share of what you see is algorithm-driven, how manipulative your feed is (0–100), and how it changes over time. When your feed leans toward manipulation, Clairity suggests calmer alternatives and concrete tips to take back control. Built for HackTJ 2026’s **invisible infrastructure** theme — making the algorithms that shape our attention visible and actionable.
+
+- **One number that matters:** The dashboard shows “X% of what you see is chosen by the algorithm” so you can see how much of your feed is truly from people you follow.
+
 ## Features
 
 - **Passive monitoring** — Runs silently on YouTube and Twitter/X, extracts feed metadata

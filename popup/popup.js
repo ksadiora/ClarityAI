@@ -29,13 +29,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const scoreEl = document.getElementById('scoreValue');
   const circleEl = document.getElementById('scoreCircle');
   scoreEl.textContent = aggregates?.totalItems ? score : '--';
-  
+
   if (aggregates?.totalItems) {
     circleEl.classList.remove('low', 'med', 'high');
     if (score > 60) circleEl.classList.add('high');
     else if (score > 35) circleEl.classList.add('med');
     else circleEl.classList.add('low');
   }
+
+  const scoreInterpretationEl = document.getElementById('scoreInterpretation');
+  if (scoreInterpretationEl) {
+    scoreInterpretationEl.textContent = aggregates?.scoreInterpretation || '';
+    scoreInterpretationEl.style.display = aggregates?.scoreInterpretation ? 'block' : 'none';
+  }
+  const algorithmShareEl = document.getElementById('algorithmShareLine');
+  if (algorithmShareEl && aggregates?.totalItems && typeof aggregates?.algorithmShare === 'number') {
+    const pct = Math.round(aggregates.algorithmShare * 100);
+    algorithmShareEl.textContent = pct + '% of what you see is chosen by the algorithm.';
+    algorithmShareEl.style.display = 'block';
+  } else if (algorithmShareEl) {
+    algorithmShareEl.style.display = 'none';
+  }
+
+  const emptyHintEl = document.getElementById('popupEmptyHint');
+  if (emptyHintEl) emptyHintEl.style.display = aggregates?.totalItems ? 'none' : 'block';
 
   document.getElementById('itemCount').textContent = aggregates?.totalItems ?? 0;
 
