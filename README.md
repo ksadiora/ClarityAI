@@ -1,4 +1,4 @@
-# Algorithmic Manipulation Auditor
+# Clairity
 
 A browser extension that reverse-engineers what social media algorithms are optimizing you for. It observes what gets served to you, classifies each item with AI, and builds a personal manipulation profile.
 

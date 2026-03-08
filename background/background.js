@@ -56,16 +56,84 @@ async function getApiKey() {
 
 const CONTENT_CATEGORIES = ['news', 'entertainment', 'education', 'gaming', 'lifestyle', 'comedy', 'music', 'sports', 'tech', 'politics', 'how_to', 'vlog', 'drama', 'science', 'business', 'other'];
 
-async function classifyWithAPI(content, apiKey, provider = 'anthropic') {
-  const prompt = `Analyze this social media content. Return ONLY valid JSON.
+function buildContentBlock(title, description, content) {
+  const parts = [];
+  if (title) parts.push('Title: ' + title.substring(0, 600));
+  if (description) parts.push('Description: ' + description.substring(0, 600));
+  if (!title && !description && content) parts.push('Content: ' + content.substring(0, 1500));
+  else if (content && (title || description)) parts.push('Full text: ' + content.substring(0, 800));
+  return parts.length ? parts.join('\n\n') : content.substring(0, 1500);
+}
 
-Content:
----
-${content.substring(0, 1500)}
----
+async function classifyWithAPI(content, apiKey, provider = 'gemini', context = {}) {
+  const { isAdSlot = false, title: contextTitle, description: contextDesc } = context;
+  const contentBlock = buildContentBlock(contextTitle || '', contextDesc || '', content || '');
 
-Respond with:
-{"emotional_valence":"positive|neutral|negative|provocative","manipulation_mechanic":"outrage|fear|social_comparison|humor|inspiration|controversy|curiosity_gap|tribal_identity|neutral|ad","urgency_signals":true|false,"manipulation_intensity":0-100,"content_category":"${CONTENT_CATEGORIES.join('|')}"}`;
+  const geminiPrompt = `Classify this social media content. Use the title and description below.
+
+${contentBlock}
+${isAdSlot ? '\n(This is in a promoted slot; still classify by the content itself.)' : ''}
+
+You MUST choose one: either EDUCATIONAL/INFORMATIONAL or MANIPULATIVE. Use the full scale. Do NOT default to neutral for clearly manipulative or clearly educational content.
+
+MANIPULATIVE (answer manipulative: true, mechanic NOT neutral, manipulation_intensity 55-100):
+- Scams, get-rich-quick, "make money fast", "free money", crypto/forex schemes, "act now", "limited time", "don't miss out", "you won't believe", "secret", "exposed", "they don't want you to know" → "curiosity_gap" or "commercial_manipulation", intensity 65-90
+- AI-generated content, "made by AI", "ChatGPT", "deepfake", synthetic media used to mislead or bait engagement → "curiosity_gap", intensity 60-85
+- Government conspiracies, "cover-up", "false flag", "deep state", "they're hiding", "mainstream media lying", "wake up", conspiracy framing, us-vs-them → "tribal_identity" or "outrage" or "fear", intensity 65-95
+- Manipulative ads (urgency, FOMO, fake scarcity) → "commercial_manipulation", intensity 60-90
+- Clickbait, sensationalism, outrage bait, fear-mongering → "curiosity_gap" or "outrage" or "fear", intensity 55-95
+
+EDUCATIONAL (answer educational: true, mechanic "informational", manipulation_intensity 0-25):
+- Teaching, science, facts, how-to, calm explainer, STEM, medical/biology explainer, tutorials, research, documentaries. Only if it is calm and factual.
+
+NEUTRAL (only when truly neither):
+- Bland entertainment, vague posts, normal vlogs with no pressure or sensationalism. Use neutral only when content has no clear educational value AND no manipulation signals.
+
+Return ONLY this JSON, no other text:
+{"educational": true or false, "manipulative": true or false, "mechanic": "informational" or "neutral" or "curiosity_gap" or "outrage" or "fear" or "controversy" or "commercial_manipulation" or "tribal_identity" or "humor" or "inspiration", "manipulation_intensity": 0-100}`;
+
+  if (provider === 'gemini') {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: geminiPrompt }] }],
+        generationConfig: { maxOutputTokens: 256, temperature: 0.1, responseMimeType: 'application/json' },
+      }),
+    });
+    if (!res.ok) throw new Error('Gemini API ' + res.status);
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return parseGeminiClassification(typeof text === 'string' ? text : '');
+  }
+
+  const prompt = `You are an expert at detecting algorithmic manipulation, propaganda, engagement bait, and misinformation in social media content. Your job is to classify how strongly this content is designed to manipulate the viewer—not to be conservative. Use the full scale.
+
+CONTENT TO ANALYZE:
+---
+${contentBlock}
+---
+${isAdSlot ? "(The platform placed this in a promoted slot—classify by the content itself; most promoted content is not commercial_manipulation.)" : ""}
+
+CRITICAL - WHEN TO USE "commercial_manipulation":
+- Use "commercial_manipulation" ONLY when the content is unambiguously a paid advertisement (selling a product, service, or brand) AND it uses psychological manipulation (urgency, FOMO, targeting, emotional hooks). This term signals high manipulation: paid content designed to persuade. If the content is just informational or low-key commercial, use curiosity_gap or neutral instead.
+- Do NOT use "commercial_manipulation" for: recommended/viral videos, promoted posts that are normal news/drama/entertainment, boosted organic content. Classify those by their actual mechanic (outrage, curiosity_gap, controversy, humor, etc.). When in doubt, use curiosity_gap, controversy, or neutral—not commercial_manipulation.
+
+WHEN TO USE "informational" (green label; show as "Informational"):
+- Use "informational" when the content is genuinely useful: factual, educational, how-to, explainer, news without sensationalism, science, tutorials, or calm explanatory content with no emotional manipulation or engagement bait. manipulation_intensity should be 0–25. This is the green, positive category.
+- STEM and educational: If the content is about Science, Technology, Engineering, or Mathematics (physics, chemistry, biology, coding, math, engineering, research, experiments, STEM, explainers, lessons, courses, learning, education, tutorial, how it works, documentary, facts), classify as "informational" with manipulation_intensity 0–25. Only use something else if it is obviously sensationalized or engagement-bait. Anything STEM-related or educational must be "informational" and green.
+- Medical and biology: Content about health, medicine, anatomy, how the body works, patient stories, clinical topics, or biology (e.g. cartilage, ligaments, conditions, treatments) is "informational" with 0–25 intensity unless it is clearly sensationalized or engagement-bait. Do NOT label calm educational science/medical posts as manipulation.
+
+OTHER RULES:
+- Use "neutral" for content that is neither clearly manipulative nor clearly informational (e.g. bland entertainment, vague posts).
+- Do NOT default to "neutral" when the content is clearly educational or factual—use "informational" instead.
+- Propaganda, misinformation, and engagement bait: use outrage, fear, tribal_identity, controversy, or curiosity_gap with intensity 50–100 when the content uses emotional triggers, us-vs-them framing, sensationalism, or clearly seeks viral engagement.
+- manipulation_intensity: 0–25 = informational or benign; 30–50 = neutral or light pull; 40–60 = some emotional pull or engagement bait; 70–100 = strong propaganda or heavy engagement bait.
+- urgency_signals: true if the content uses urgency language ("breaking", "you won't believe", "before it's too late", "everyone is talking", "secret", "exposed", "finally", "they're hiding").
+
+Return ONLY this JSON, no other text:
+{"emotional_valence":"positive|neutral|negative|provocative","manipulation_mechanic":"outrage|fear|social_comparison|humor|inspiration|controversy|curiosity_gap|tribal_identity|neutral|informational|commercial_manipulation","urgency_signals":true|false,"manipulation_intensity":0-100,"content_category":"${CONTENT_CATEGORIES.join('|')}"}`;
 
   if (provider === 'openai') {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -82,21 +150,6 @@ Respond with:
     });
     const data = await res.json();
     const text = data.choices?.[0]?.message?.content || '';
-    return parseClassification(text);
-  }
-
-  if (provider === 'gemini') {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 256, temperature: 0.1 },
-      }),
-    });
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     return parseClassification(text);
   }
 
@@ -119,22 +172,121 @@ Respond with:
   return parseClassification(text);
 }
 
-function parseClassification(text) {
+function extractJsonObject(str) {
+  if (!str || typeof str !== 'string') return null;
+  const trimmed = str.replace(/```json?\s*|\s*```/g, '').trim();
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first === -1 || last === -1 || last <= first) return null;
+  let jsonStr = trimmed.slice(first, last + 1);
+  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+  return jsonStr;
+}
+
+function parseGeminiClassification(text) {
+  const defaultClassification = {
+    manipulation_mechanic: 'neutral',
+    manipulation_intensity: 30,
+    urgency_signals: false,
+    emotional_valence: 'neutral',
+    content_category: 'other',
+  };
   try {
-    const json = text.replace(/```json?\s*|\s*```/g, '').trim();
-    const parsed = JSON.parse(json);
+    let jsonStr = (text || '').trim();
+    if (!jsonStr) return defaultClassification;
+    const extracted = extractJsonObject(text);
+    if (extracted) jsonStr = extracted;
+    else jsonStr = jsonStr.replace(/```json?\s*|\s*```/g, '').trim();
+    const parsed = JSON.parse(jsonStr);
+    let mechanic = String(parsed.mechanic || 'neutral').toLowerCase().replace(/\s+/g, '_');
+    if (mechanic === 'ad') mechanic = 'commercial_manipulation';
+    if (mechanic === 'information') mechanic = 'informational';
+    if (parsed.educational === true) mechanic = 'informational';
+    const intensity = Math.min(100, Math.max(0, parseInt(parsed.manipulation_intensity, 10) || 0));
+    return {
+      manipulation_mechanic: mechanic,
+      manipulation_intensity: parsed.educational === true ? Math.min(intensity, 25) : intensity,
+      urgency_signals: false,
+      emotional_valence: 'neutral',
+      content_category: 'other',
+    };
+  } catch (e) {
+    return defaultClassification;
+  }
+}
+
+function parseClassification(text) {
+  const defaultClassification = {
+    manipulation_mechanic: 'neutral',
+    manipulation_intensity: 30,
+    urgency_signals: false,
+    emotional_valence: 'neutral',
+    content_category: 'other',
+  };
+  try {
+    const jsonStr = extractJsonObject(text) || (text || '').replace(/```json?\s*|\s*```/g, '').trim();
+    if (!jsonStr) return defaultClassification;
+    const parsed = JSON.parse(jsonStr);
     let category = (parsed.content_category || 'other').toLowerCase().replace(/\s+/g, '_');
     if (!CONTENT_CATEGORIES.includes(category)) category = 'other';
+    let mechanic = (parsed.manipulation_mechanic || 'neutral').toLowerCase().replace(/\s+/g, '_');
+    if (mechanic === 'ad') mechanic = 'commercial_manipulation';
+    if (mechanic === 'information') mechanic = 'informational';
     return {
-      manipulation_mechanic: parsed.manipulation_mechanic || 'neutral',
-      manipulation_intensity: Math.min(100, Math.max(0, parsed.manipulation_intensity || 0)),
+      manipulation_mechanic: mechanic,
+      manipulation_intensity: Math.min(100, Math.max(0, parseInt(parsed.manipulation_intensity, 10) || 0)),
       urgency_signals: !!parsed.urgency_signals,
       emotional_valence: parsed.emotional_valence || 'neutral',
       content_category: category,
     };
   } catch (e) {
-    return null;
+    return defaultClassification;
   }
+}
+
+const STEM_EDU_KEYWORDS = /\b(stem|science|math|physics|chemistry|biology|biological|engineering|medical|medicine|medicinal|anatomy|physiology|physiological|coding|programming|tutorial|lesson|course|learn|education|educational|how it works|explainer|documentary|facts|research|experiment|khan|crash course|ted\b|tedx|algebra|calculus|organic chemistry|introduction to|veritasium|numberphile|3blue1brown|cartilage|ligament|tendon|parkinson|tremor|clinical|patient)\b/i;
+const STEM_EDU_SUBSTRING = /interestingstem|\bstem\b|stem\s/; // @InterestingSTEM and "stem" as word or before space
+
+function ensureInformationalForStemEdu(content, classification) {
+  if (!classification || !content) return classification;
+  const text = (typeof content === 'string' ? content : '').toLowerCase();
+  const match = STEM_EDU_KEYWORDS.test(text) || STEM_EDU_SUBSTRING.test(text);
+  if (!match) return classification;
+  return {
+    ...classification,
+    manipulation_mechanic: 'informational',
+    manipulation_intensity: Math.min(classification.manipulation_intensity || 0, 25),
+  };
+}
+
+const MANIPULATION_SIGNALS = (function () {
+  const scam = /\b(scam|scams|scamming|act now|limited time|only \d+ left|don't miss out|everyone is talking|you won't believe|secret|exposed|make money fast|free money|get rich|crypto scheme|forex scam|click here|last chance|expires soon|order now|buy now|limited offer|exclusive deal|risk.?free|guaranteed results|earn \d+|they're hiding|before it's too late|breaking.*shocking|urgent|instant cash|instant money|million in|no credit card|free trial|\d+%\s*off)\b/i;
+  const aiGenerated = /\b(ai generated|ai.?generated|generated by ai|made by ai|ai made|ai created|chatgpt|openai|deepfake|deep fake|ai.?created|created by ai|written by ai|this is ai|fake.*ai|ai.*fake)\b/i;
+  const conspiracy = /\b(conspiracy|conspiracies|government cover|govt cover|cover.?up|false flag|they're lying|mainstream (media )?lying|mainstream (media )?hiding|media blackout|they don't want you to know|wake up|open your eyes|sheeple|truth they hide|hidden truth|narrative|the narrative|controlled (media|narrative)|deep state|new world order|illuminati|they're hiding|wake.?up)\b/i;
+  return function (text) {
+    const t = (text || '').toLowerCase();
+    return scam.test(t) || aiGenerated.test(t) || conspiracy.test(t);
+  };
+})();
+
+function ensureManipulativeWhenSignals(content, classification) {
+  if (!classification || !content) return classification;
+  if (classification.manipulation_mechanic === 'informational') return classification;
+  if (classification.manipulation_mechanic !== 'neutral') return classification;
+  const text = (typeof content === 'string' ? content : '').toLowerCase();
+  if (!MANIPULATION_SIGNALS(text)) return classification;
+  const isAd = /\b(ad|promoted|sponsored)\b/i.test(text);
+  const isConspiracy = /\b(conspiracy|cover.?up|false flag|deep state|they're (lying|hiding)|wake.?up|mainstream (media )?(lying|hiding))\b/i.test(text);
+  const isAi = /\b(ai generated|generated by ai|made by ai|chatgpt|deepfake|ai.?created|created by ai)\b/i.test(text);
+  let mechanic = 'curiosity_gap';
+  if (isAd) mechanic = 'commercial_manipulation';
+  else if (isConspiracy) mechanic = 'tribal_identity';
+  else if (isAi) mechanic = 'ai_generated';
+  return {
+    ...classification,
+    manipulation_mechanic: mechanic,
+    manipulation_intensity: Math.max(classification.manipulation_intensity || 0, 72),
+  };
 }
 
 async function storeContent(item) {
@@ -170,18 +322,36 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'CLASSIFY_CONTENT') {
     getApiKey().then(async (apiKey) => {
-      if (apiKey) {
-        const settings = (await chrome.storage.local.get([SETTINGS_KEY]))[SETTINGS_KEY] || {};
-        const provider = settings.provider || 'anthropic';
-        try {
-          const classification = await classifyWithAPI(msg.content, apiKey, provider);
-          sendResponse({ classification });
-        } catch (e) {
-          sendResponse({ classification: null });
-        }
-      } else {
-        sendResponse({ classification: null });
+      const defaultClassification = {
+        manipulation_mechanic: 'neutral',
+        manipulation_intensity: 30,
+        urgency_signals: false,
+        emotional_valence: 'neutral',
+        content_category: 'other',
+      };
+      const contentForFallback = [msg.title, msg.description, msg.content].filter(Boolean).join(' ');
+      if (!apiKey) {
+        const fallback = ensureInformationalForStemEdu(contentForFallback, defaultClassification);
+        sendResponse({ classification: fallback });
+        return;
       }
+      const settings = (await chrome.storage.local.get([SETTINGS_KEY]))[SETTINGS_KEY] || {};
+      const provider = settings.provider || 'gemini';
+      const opts = { isAdSlot: !!msg.isAd, title: msg.title, description: msg.description };
+      let classification = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          classification = await classifyWithAPI(msg.content || contentForFallback, apiKey, provider, opts);
+          if (classification) break;
+        } catch (e) {
+          if (attempt === 3) classification = defaultClassification;
+          else await new Promise((r) => setTimeout(r, 400 * attempt));
+        }
+      }
+      if (!classification) classification = defaultClassification;
+      classification = ensureInformationalForStemEdu(contentForFallback || msg.content, classification);
+      classification = ensureManipulativeWhenSignals(contentForFallback || msg.content, classification);
+      sendResponse({ classification });
     });
     return true;
   }
@@ -199,6 +369,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const history = r[STORAGE_KEY] || [];
       const aggregates = computeAggregates(history);
       aggregates.minutesByPlatform = r[TIME_KEY] || { youtube: 0, twitter: 0, tiktok: 0 };
+      aggregates.tips = getTipsForUser(aggregates);
       sendResponse(aggregates);
     });
     return true;
@@ -321,6 +492,46 @@ function computeAggregates(history) {
     manipulationWarning,
     healthierAlternatives,
   };
+}
+
+const TIPS = [
+  { id: 'autoplay', title: 'Turn off autoplay', body: 'On YouTube and TikTok, disable autoplay so you choose what to watch next instead of the algorithm.', category: 'reduce_manipulation' },
+  { id: 'not_interested', title: 'Use "Not interested"', body: 'Tap "Not interested" or "Don\'t recommend channel" on content you don\'t want. It trains the feed over time.', category: 'reduce_manipulation' },
+  { id: 'subscriptions_first', title: 'Prefer Subscriptions over Home', body: 'On YouTube, open Subscriptions first. On X and TikTok, check Following before For You so you see people you chose.', category: 'reduce_manipulation' },
+  { id: 'mute_words', title: 'Mute words and topics', body: 'On X, use muted words to hide triggering or low-value topics. Fewer outrage hooks means a calmer feed.', category: 'reduce_manipulation' },
+  { id: 'time_cap', title: 'Set a daily time cap', body: 'Use a timer or phone settings to limit time per app. Even a soft limit helps you scroll more intentionally.', category: 'productive_use' },
+  { id: 'short_breaks', title: 'Take a 5‑minute break after 30 min', body: 'Step away from the feed every 30 minutes. Short breaks reduce endless scroll and help you notice when you\'re done.', category: 'productive_use' },
+  { id: 'follow_educational', title: 'Follow more educational accounts', body: 'Add a few STEM, how‑to, or news accounts you trust. They balance out viral and sensational content.', category: 'productive_use' },
+  { id: 'block_learning_time', title: 'Block time for learning vs. entertainment', body: 'Decide in advance: "This 20 min is for learning" vs. "This is for fun." It reduces guilt and overuse.', category: 'productive_use' },
+  { id: 'review_history', title: 'Review your watch history weekly', body: 'Skim what you actually watched. It makes algorithm influence visible and helps you adjust what you click.', category: 'productive_use' },
+  { id: 'focus_mode', title: 'Use focus mode or site blockers', body: 'During work or study, use Do Not Disturb or a blocker for social apps so feeds don\'t pull you in.', category: 'productive_use' },
+];
+
+function getTipsForUser(aggregates) {
+  const mins = aggregates.minutesByPlatform || { youtube: 0, twitter: 0, tiktok: 0 };
+  const byMechanic = aggregates.byMechanic || {};
+  const totalMins = (mins.youtube || 0) + (mins.twitter || 0) + (mins.tiktok || 0);
+  const topPlatform = totalMins > 0
+    ? [['youtube', mins.youtube], ['twitter', mins.twitter], ['tiktok', mins.tiktok]].sort((a, b) => (b[1] || 0) - (a[1] || 0))[0][0]
+    : null;
+  const highEngagement = (byMechanic.curiosity_gap || 0) + (byMechanic.outrage || 0) > (aggregates.totalItems || 0) / 2;
+  const reduceFirst = !!aggregates.manipulationWarning;
+
+  const ordered = [...TIPS];
+  if (reduceFirst) {
+    ordered.sort((a, b) => (a.category === 'reduce_manipulation' ? 0 : 1) - (b.category === 'reduce_manipulation' ? 0 : 1));
+  }
+  if (highEngagement) {
+    const autoplay = ordered.find(t => t.id === 'autoplay');
+    const notInt = ordered.find(t => t.id === 'not_interested');
+    if (autoplay) ordered.splice(ordered.indexOf(autoplay), 1), ordered.unshift(autoplay);
+    if (notInt) ordered.splice(ordered.indexOf(notInt), 1), ordered.splice(1, 0, notInt);
+  }
+  if (topPlatform) {
+    const timeCap = ordered.find(t => t.id === 'time_cap');
+    if (timeCap) ordered.splice(ordered.indexOf(timeCap), 1), ordered.splice(Math.min(2, ordered.length), 0, timeCap);
+  }
+  return ordered.slice(0, 8);
 }
 
 const FALLBACK_SUGGESTIONS = {

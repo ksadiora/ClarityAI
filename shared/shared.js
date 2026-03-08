@@ -10,7 +10,9 @@ const MANIPULATION_AUDITOR = {
     CURIOSITY_GAP: 'curiosity_gap',
     TRIBAL_IDENTITY: 'tribal_identity',
     NEUTRAL: 'neutral',
-    AD: 'ad',
+    INFORMATIONAL: 'informational',
+    COMMERCIAL_MANIPULATION: 'commercial_manipulation',
+    AI_GENERATED: 'ai_generated',
   },
   STORAGE_KEYS: {
     CONTENT_HISTORY: 'manipulation_auditor_content_history',
@@ -27,7 +29,10 @@ const MANIPULATION_AUDITOR = {
     curiosity_gap: '#eab308',
     tribal_identity: '#ec4899',
     neutral: '#6b7280',
-    ad: '#14b8a6',
+    informational: '#16a34a',
+    commercial_manipulation: '#c2410c',
+    ad: '#c2410c',
+    ai_generated: '#eab308',
   },
   getClassificationPrompt: (content) => `Analyze this social media content for algorithmic manipulation. Return ONLY valid JSON, no other text.
 
@@ -39,7 +44,7 @@ ${content.substring(0, 1500)}
 Respond with this exact JSON structure:
 {
   "emotional_valence": "positive" | "neutral" | "negative" | "provocative",
-  "manipulation_mechanic": "outrage" | "fear" | "social_comparison" | "humor" | "inspiration" | "controversy" | "curiosity_gap" | "tribal_identity" | "neutral" | "ad",
+  "manipulation_mechanic": "outrage" | "fear" | "social_comparison" | "humor" | "inspiration" | "controversy" | "curiosity_gap" | "tribal_identity" | "neutral" | "commercial_manipulation",
   "urgency_signals": true | false,
   "manipulation_intensity": 0-100,
   "reasoning": "one sentence"

@@ -3,11 +3,18 @@ const CATEGORY_LABELS = {
   gaming: 'Gaming', lifestyle: 'Lifestyle', comedy: 'Comedy', music: 'Music',
   sports: 'Sports', tech: 'Tech', politics: 'Politics', how_to: 'How-to',
   vlog: 'Vlog', drama: 'Drama', science: 'Science', business: 'Business', other: 'Other',
+  documentary: 'Documentary', true_crime: 'True crime', reaction: 'Reaction', commentary: 'Commentary',
+  review: 'Reviews', beauty: 'Beauty', fashion: 'Fashion', food: 'Food', finance: 'Finance',
+  crypto: 'Crypto', motivation: 'Motivation', memes: 'Memes', dance: 'Dance', art: 'Art',
+  history: 'History', philosophy: 'Philosophy', diy: 'DIY & crafts', asmr: 'ASMR',
+  film: 'Film', tv: 'TV', self_improvement: 'Self-improvement', relationship: 'Relationships',
+  unboxing: 'Unboxing', storytime: 'Storytime', travel: 'Travel', fitness: 'Fitness',
 };
 const COLORS = {
   outrage: '#ef4444', fear: '#dc2626', social_comparison: '#f97316', humor: '#22c55e',
   inspiration: '#3b82f6', controversy: '#a855f7', curiosity_gap: '#eab308',
-  tribal_identity: '#ec4899', neutral: '#6b7280', ad: '#14b8a6',
+  tribal_identity: '#ec4899', neutral: '#6b7280', informational: '#16a34a', commercial_manipulation: '#c2410c', ad: '#c2410c',
+  ai_generated: '#eab308',
 };
 
 async function loadData() {
@@ -18,16 +25,45 @@ async function loadData() {
 
 function inferCategoryFromText(text) {
   const t = (text || '').toLowerCase();
-  if (/\bnews\b|breaking|headline|reporter/i.test(t)) return 'news';
-  if (/\bgame|gaming|playthrough|minecraft|fortnite|gamer\b/i.test(t)) return 'gaming';
+  if (/\bnews\b|breaking|headline|reporter|cnn|fox|bbc|reuters/i.test(t)) return 'news';
+  if (/\bgame|gaming|playthrough|walkthrough|minecraft|fortnite|gamer\b|esports|twitch/i.test(t)) return 'gaming';
+  if (/\bdiy\b|craft\b|knitting|sewing\b|woodwork|handmade/i.test(t)) return 'diy';
   if (/\bhow to|tutorial|learn|step by step|guide\b/i.test(t)) return 'how_to';
-  if (/\bcomedy|funny|laugh|joke\b/i.test(t)) return 'comedy';
-  if (/\bmusic|song|album|lyrics|artist\b/i.test(t)) return 'music';
-  if (/\bsport|nba|nfl|soccer|football|basketball\b/i.test(t)) return 'sports';
-  if (/\btech|programming|coding|software|developer\b/i.test(t)) return 'tech';
-  if (/\beducation|school|study|course|science\b/i.test(t)) return 'education';
-  if (/\blifestyle|fitness|recipe|cooking|travel|vlog\b/i.test(t)) return 'lifestyle';
-  if (/\bpolitics|democrat|republican|election\b/i.test(t)) return 'politics';
+  if (/\bcomedy|funny|laugh|joke\b|stand.?up|sketch\b/i.test(t)) return 'comedy';
+  if (/\bmusic|song|album|lyrics|artist\b|spotify|playlist|cover\s+of|music video/i.test(t)) return 'music';
+  if (/\bsport|nba|nfl|soccer|football|basketball|baseball|tennis|olympics|workout\b/i.test(t)) return 'sports';
+  if (/\btech|programming|coding|software|developer\b|apple\s+event|android|gadget/i.test(t)) return 'tech';
+  if (/\beducation|school|study|course\b|explained\b|learn\s+about/i.test(t)) return 'education';
+  if (/\bscience\b|physics|chemistry|biology|space\s+nasa|research\b|study\s+shows/i.test(t)) return 'science';
+  if (/\bpolitics|democrat|republican|election\b|congress|senate|vote\b/i.test(t)) return 'politics';
+  if (/\bbusiness\b|investing|stock\s+market|ceo|startup\b|entrepreneur/i.test(t)) return 'business';
+  if (/\bfinance\b|money\s+tip|budget\b|saving\s+money|invest\b/i.test(t)) return 'finance';
+  if (/\bcrypto|bitcoin|ethereum|blockchain|nft\b/i.test(t)) return 'crypto';
+  if (/\bdocumentary\b|doc\s+series|true\s+story|based on real/i.test(t)) return 'documentary';
+  if (/\btrue\s+crime\b|murder\b|serial\s+killer|crime\s+story|unsolved/i.test(t)) return 'true_crime';
+  if (/\breaction\b|react\s+to|watch(ing)?\s+with|first\s+time\s+watching/i.test(t)) return 'reaction';
+  if (/\bcommentary\b|hot\s+take|my\s+opinion|rant\b|discussion\s+video/i.test(t)) return 'commentary';
+  if (/\breview\b|unboxing|first\s+impression|unbox\b/i.test(t)) return 'review';
+  if (/\bunboxing|unbox\s+|unboxed/i.test(t)) return 'unboxing';
+  if (/\bbeauty\b|makeup|skincare|cosmetic|hair\s+tutorial|get\s+ready\s+with/i.test(t)) return 'beauty';
+  if (/\bfashion\b|outfit|ootd|style\s+tip|haul\b|try\s+on/i.test(t)) return 'fashion';
+  if (/\brecipe\b|cooking|food\b|chef\b|meal\b|eat\b|restaurant|baking\b/i.test(t)) return 'food';
+  if (/\bmotivation\b|motivational|inspirational|grind\b|hustle\b|mindset\b/i.test(t)) return 'motivation';
+  if (/\bself\s*improvement|productivity|habit\b|routine\b|morning\s+routine/i.test(t)) return 'self_improvement';
+  if (/\bmeme\b|memes\b|dank\b|viral\s+video|trend\s+on/i.test(t)) return 'memes';
+  if (/\bdance\b|choreography|tiktok\s+dance|dancing\b/i.test(t)) return 'dance';
+  if (/\bart\b|drawing|painting|digital\s+art|artist\s+draws/i.test(t)) return 'art';
+  if (/\bhistory\b|historical|ww2|world\s+war|ancient\b|medieval/i.test(t)) return 'history';
+  if (/\bphilosophy|philosophical|existential|meaning\s+of\s+life/i.test(t)) return 'philosophy';
+  if (/\basmr\b|whisper|satisfying\s+sound|soft\s+spoken/i.test(t)) return 'asmr';
+  if (/\bfilm\b|movie\b|cinema|box\s+office|film\s+review/i.test(t)) return 'film';
+  if (/\btv\s+show|series\b|netflix|episode\b|season\s+\d|recap\b/i.test(t)) return 'tv';
+  if (/\brelationship\b|dating\b|breakup\b|love\s+advice|marriage\b/i.test(t)) return 'relationship';
+  if (/\bstorytime\b|story\s+time|my\s+story|what\s+happened\s+to\s+me/i.test(t)) return 'storytime';
+  if (/\btravel\b|vacation|trip\s+to|travel\s+vlog|backpacking/i.test(t)) return 'travel';
+  if (/\bfitness\b|gym\b|workout\b|exercise\b|weight\s+loss|muscle\b/i.test(t)) return 'fitness';
+  if (/\blifestyle|vlog\b|day\s+in\s+my\s+life|ootd|routine\b|recipe|cooking/i.test(t)) return 'lifestyle';
+  if (/\bdrama\b|dramatic|tea\b|spill\b|scandal\b|exposed\b/i.test(t)) return 'drama';
   return 'entertainment';
 }
 
@@ -45,14 +81,17 @@ function computeAggregates(history) {
     const p = item.platform || 'unknown';
     const c = item.classification || {};
     const m = c.manipulation_mechanic || 'neutral';
-    const cat = c.content_category || inferCategoryFromText(item.text);
+    const cat = (c.content_category && c.content_category !== 'other')
+      ? c.content_category
+      : inferCategoryFromText(item.text);
     const i = c.manipulation_intensity || 0;
     const age = now - (item.timestamp || 0);
     const recency = age < dayMs ? 2 : age < 7 * dayMs ? 1.5 : 1;
 
-    byPlatform[p] = byPlatform[p] || { count: 0, intensity: 0 };
+    byPlatform[p] = byPlatform[p] || { count: 0, intensity: 0, recommended: 0 };
     byPlatform[p].count++;
     byPlatform[p].intensity += i;
+    if (item.isRecommended !== false) byPlatform[p].recommended = (byPlatform[p].recommended || 0) + 1;
     byMechanic[m] = (byMechanic[m] || 0) + 1;
     byCategory[cat] = (byCategory[cat] || 0) + recency;
     totalIntensity += i;
@@ -61,6 +100,9 @@ function computeAggregates(history) {
 
   Object.keys(byPlatform).forEach(p => {
     byPlatform[p].avgScore = Math.round(byPlatform[p].intensity / byPlatform[p].count);
+    const total = byPlatform[p].count;
+    const rec = byPlatform[p].recommended || 0;
+    byPlatform[p].recommendedRatio = total ? rec / total : 0;
   });
 
   const topMechanic = Object.entries(byMechanic).sort((a, b) => b[1] - a[1])[0];
@@ -115,7 +157,7 @@ function formatMins(m) {
 }
 
 async function render() {
-  let history = [], minutes = {};
+  let history = [], minutes = {}, tips = [];
   try {
     const data = await loadData();
     history = data.history || [];
@@ -123,6 +165,10 @@ async function render() {
   } catch (e) {
     console.error('MA: loadData failed', e);
   }
+  try {
+    const aggResponse = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_AGGREGATES' }, r));
+    tips = Array.isArray(aggResponse?.tips) ? aggResponse.tips : [];
+  } catch (e) {}
   const agg = computeAggregates(history);
   const mins = minutes || { youtube: 0, twitter: 0, tiktok: 0 };
 
@@ -191,9 +237,11 @@ async function render() {
     </div>`;
   }).join('');
 
+  const platformLabels = { youtube: 'YouTube', twitter: 'X', tiktok: 'TikTok' };
   const platformBars = document.getElementById('platformBars');
   platformBars.innerHTML = Object.entries(agg.byPlatform)
-    .map(([name, d]) => {
+    .map(([key, d]) => {
+      const name = platformLabels[key] || key;
       const color = d.avgScore > 60 ? '#ef4444' : d.avgScore > 35 ? '#eab308' : '#22c55e';
       return `<div class="platform-bar">
         <span class="label">${name}</span>
@@ -208,7 +256,7 @@ async function render() {
     .sort((a, b) => b[1] - a[1])
     .map(([name, count]) => `<div class="mechanic-item">
       <span class="dot" style="background:${COLORS[name] || '#6b7280'}"></span>
-      <span class="name">${name.replace(/_/g, ' ')}</span>
+      <span class="name">${name === 'ai_generated' ? 'AI' : name.replace(/_/g, ' ')}</span>
       <span class="count">(${count})</span>
     </div>`)
     .join('') || '<p class="hint">No mechanic data yet</p>';
@@ -225,10 +273,89 @@ async function render() {
 
   const driftChart = document.getElementById('driftChart');
   const hasDrift = agg.weekly.some(w => w.score != null);
-  driftChart.innerHTML = hasDrift
-    ? agg.weekly.map(w => `<div style="margin-bottom:8px">Week -${w.week}: ${w.score != null ? w.score + ' avg' : 'no data'} (${w.count} items)</div>`).join('')
-    : '<div class="empty">Collect more data over time to see algorithmic drift</div>';
-  if (!hasDrift) driftChart.classList.add('empty');
+  if (!hasDrift) {
+    driftChart.innerHTML = '<div class="empty">Collect more data over time to see algorithmic drift</div>';
+    driftChart.classList.add('empty');
+  } else {
+    driftChart.classList.remove('empty');
+    const weeks = [...agg.weekly].reverse();
+    const w = 400;
+    const h = 180;
+    const pad = { left: 36, right: 16, top: 12, bottom: 28 };
+    const x0 = pad.left;
+    const x1 = w - pad.right;
+    const y0 = pad.top;
+    const y1 = h - pad.bottom;
+    const yScale = (v) => y1 - (v / 100) * (y1 - y0);
+    const xScale = (i) => x0 + (i / Math.max(weeks.length - 1, 1)) * (x1 - x0);
+    const points = weeks
+      .map((d, i) => ({ i, x: xScale(i), score: d.score, week: d.week }))
+      .filter((d) => d.score != null);
+    const pathD =
+      points.length > 0
+        ? points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${yScale(p.score)}`).join(' ')
+        : '';
+    const xLabels = weeks.map((_, i) => `<text x="${xScale(i)}" y="${h - 6}" class="drift-x-label" text-anchor="middle">Week ${4 - i}</text>`).join('');
+    driftChart.innerHTML = `
+      <svg class="drift-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+        <line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" class="drift-axis"/>
+        <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" class="drift-axis"/>
+        <text x="${x0 - 8}" y="${y0 + 4}" class="drift-y-label" text-anchor="end">100</text>
+        <text x="${x0 - 8}" y="${y1 + 4}" class="drift-y-label" text-anchor="end">0</text>
+        ${pathD ? `<path d="${pathD}" class="drift-line" fill="none"/>` : ''}
+        ${points.map((p) => `<circle cx="${p.x}" cy="${yScale(p.score)}" r="4" class="drift-dot"/>`).join('')}
+        ${xLabels}
+      </svg>`;
+  }
+
+  const tipsListEl = document.getElementById('tipsList');
+  if (tipsListEl) {
+    if (tips.length > 0) {
+      tipsListEl.innerHTML = tips.slice(0, 8).map(t => `
+        <div class="tip-card">
+          <strong class="tip-card-title">${(t.title || '').replace(/</g, '&lt;')}</strong>
+          <p class="tip-card-body">${(t.body || '').replace(/</g, '&lt;')}</p>
+        </div>
+      `).join('');
+    } else {
+      tipsListEl.innerHTML = '<p class="hint">Browse YouTube, X or TikTok to get personalized tips</p>';
+    }
+  }
+
+  // Organic vs algorithmic — per platform (graphical)
+  const organicEl = document.getElementById('organicNote');
+  const organicPlatformLabels = { youtube: 'YouTube', twitter: 'X', tiktok: 'TikTok' };
+  const organicData = ['youtube', 'twitter', 'tiktok']
+    .filter(p => agg.byPlatform[p] && agg.byPlatform[p].count > 0)
+    .map(p => {
+      const d = agg.byPlatform[p];
+      const recPct = Math.round((d.recommendedRatio ?? 0) * 100);
+      const organicPct = 100 - recPct;
+      return { platform: p, name: organicPlatformLabels[p], recPct, organicPct };
+    });
+  if (organicEl) {
+    if (organicData.length > 0) {
+      organicEl.innerHTML = `
+        <div class="organic-legend">
+          <span class="organic-legend-item"><span class="organic-legend-swatch organic-algo"></span> Algorithm</span>
+          <span class="organic-legend-item"><span class="organic-legend-swatch organic-follows"></span> From people you follow</span>
+        </div>
+        <div class="organic-bars">
+          ${organicData.map(({ platform, name, recPct, organicPct }) => `
+            <div class="organic-platform">
+              <div class="organic-platform-label">${name}</div>
+              <div class="organic-stack">
+                <div class="organic-segment organic-algo" style="width:${recPct}%" title="Algorithm: ${recPct}%"></div>
+                <div class="organic-segment organic-follows" style="width:${organicPct}%" title="From follows: ${organicPct}%"></div>
+              </div>
+              <div class="organic-pcts">${recPct}% / ${organicPct}%</div>
+            </div>
+          `).join('')}
+        </div>`;
+    } else {
+      organicEl.innerHTML = '<p class="hint">Browse with the extension to see organic vs algorithmic breakdown per platform.</p>';
+    }
+  }
 }
 
 render();

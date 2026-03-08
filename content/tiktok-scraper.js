@@ -2,6 +2,13 @@
 window.MANIPULATION_AUDITOR_SCRAPER = {
   platform: 'tiktok',
 
+  getCardElementAtPosition(position) {
+    if (position < 0) return null;
+    const items = this.getFeedItems();
+    const item = items[position];
+    return item?.element || null;
+  },
+
   getFeedItems() {
     const items = [];
     const seen = new Set();
@@ -27,6 +34,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
 
       const isAd = fullText.toLowerCase().includes('sponsored') || fullText.toLowerCase().includes('ad');
 
+      const isFollowing = (window.location.pathname || '').indexOf('/following') === 0;
       items.push({
         platform: 'tiktok',
         text: fullText.substring(0, 500),
@@ -34,6 +42,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
         engagement: '',
         contentType: 'video',
         isAd,
+        isRecommended: !isFollowing,
         element: container,
         timestamp: Date.now(),
       });
@@ -50,6 +59,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
           if (seen.has(href)) return;
           seen.add(href);
 
+          const isFollowing = (window.location.pathname || '').indexOf('/following') === 0;
           items.push({
             platform: 'tiktok',
             text: txt.substring(0, 500),
@@ -57,6 +67,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
             engagement: '',
             contentType: 'video',
             isAd: txt.toLowerCase().includes('sponsored'),
+            isRecommended: !isFollowing,
             element: el,
             timestamp: Date.now(),
           });
@@ -74,6 +85,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
           if (seen.has(id)) return;
           seen.add(id);
 
+          const isFollowing = (window.location.pathname || '').indexOf('/following') === 0;
           items.push({
             platform: 'tiktok',
             text: txt.substring(0, 500),
@@ -81,6 +93,7 @@ window.MANIPULATION_AUDITOR_SCRAPER = {
             engagement: '',
             contentType: 'video',
             isAd: false,
+            isRecommended: !isFollowing,
             element: el,
             timestamp: Date.now(),
           });

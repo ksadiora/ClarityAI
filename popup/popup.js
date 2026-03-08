@@ -63,6 +63,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     suggList.innerHTML = '<small class="hint">Browse more to get suggestions</small>';
   }
 
+  const tipsSection = document.getElementById('tipsSection');
+  const tipsList = document.getElementById('tipsList');
+  const tips = Array.isArray(aggregates?.tips) ? aggregates.tips : [];
+  if (tipsSection && tipsList) {
+    if (tips.length > 0) {
+      tipsSection.style.display = 'block';
+      tipsList.innerHTML = tips.slice(0, 4).map(t => `
+        <div class="tip-item">
+          <strong class="tip-title">${(t.title || '').replace(/</g, '&lt;')}</strong>
+          <p class="tip-body">${(t.body || '').replace(/</g, '&lt;')}</p>
+        </div>
+      `).join('');
+    } else {
+      tipsSection.style.display = 'none';
+    }
+  }
+
   const prefsLine = document.getElementById('preferencesLine');
   prefsLine.textContent = aggregates?.preferencesSummary || '';
   prefsLine.style.display = aggregates?.preferencesSummary ? 'block' : 'none';

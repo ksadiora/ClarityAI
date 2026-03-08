@@ -63,7 +63,37 @@ section h2 { font-size: 18px; margin-bottom: 16px; }
 
 .drift-chart { padding: 24px; background: #12121a; border-radius: 12px; border: 1px solid #2a2a3a; }
 .drift-chart.empty { color: #8888a0; text-align: center; }
-.organic-note { padding: 16px; background: #12121a; border-radius: 8px; color: #8888a0; font-size: 14px; }
+.drift-chart .drift-svg { width: 100%; max-width: 400px; height: auto; display: block; margin: 0 auto; }
+.drift-chart .drift-axis { stroke: #2a2a3a; stroke-width: 1; }
+.drift-chart .drift-line { stroke: #7c5cff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.drift-chart .drift-dot { fill: #a78bfa; stroke: #12121a; stroke-width: 1; }
+.drift-chart .drift-x-label { fill: #8888a0; font-size: 11px; }
+.drift-chart .drift-y-label { fill: #8888a0; font-size: 10px; }
+.organic-note { padding: 20px; background: #12121a; border-radius: 12px; border: 1px solid #2a2a3a; color: #e8e8ed; font-size: 14px; }
+.organic-legend { display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+.organic-legend-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #8888a0; }
+.organic-legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+.organic-legend-swatch.organic-algo { background: #7c5cff; }
+.organic-legend-swatch.organic-follows { background: #22c55e; }
+.organic-bars { display: flex; flex-direction: column; gap: 14px; }
+.organic-platform { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.organic-platform-label { width: 72px; font-size: 14px; font-weight: 600; color: #e8e8ed; }
+.organic-stack { flex: 1; min-width: 120px; height: 24px; display: flex; background: #1f1f28; border-radius: 8px; overflow: hidden; }
+.organic-segment { transition: width 0.3s; min-width: 0; }
+.organic-segment.organic-algo { background: #7c5cff; }
+.organic-segment.organic-follows { background: #22c55e; }
+.organic-pcts { width: 64px; text-align: right; font-size: 12px; color: #8888a0; }
+
+.tips-section { margin-bottom: 40px; }
+.tips-section h2 { font-size: 18px; margin-bottom: 8px; }
+.tips-section .hint { margin-bottom: 16px; }
+.tips-list { display: flex; flex-direction: column; gap: 12px; }
+.tip-card {
+  padding: 14px 16px; background: #12121a; border-radius: 10px;
+  border: 1px solid rgba(124, 92, 255, 0.2);
+}
+.tip-card-title { display: block; font-size: 14px; color: #e8e8ed; margin-bottom: 6px; }
+.tip-card-body { font-size: 13px; color: #a0a0b8; line-height: 1.45; margin: 0; }
 
 .preferences-summary { font-size: 16px; margin-bottom: 12px; color: #e8e8ed; }
 .category-pills { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -33,6 +33,13 @@ h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .sugg-link { color: #a78bfa; text-decoration: none; }
 .sugg-link:hover { text-decoration: underline; }
 
+.tips-section { margin-bottom: 12px; padding: 10px; background: rgba(124,92,255,0.06); border-radius: 8px; border: 1px solid rgba(124,92,255,0.15); }
+.tips-section h4 { font-size: 11px; color: #8888a0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.tip-item { font-size: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #1f1f28; }
+.tip-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.tip-title { display: block; color: #e8e8ed; margin-bottom: 4px; }
+.tip-body { color: #a0a0b8; font-size: 11px; line-height: 1.4; margin: 0; }
+
 .platform-scores { margin-bottom: 16px; font-size: 12px; }
 .platform-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1f1f28; }
 .platform-row:last-child { border: 0; }

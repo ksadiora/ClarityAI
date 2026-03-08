@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Algorithmic Manipulation Auditor",
-  "short_name": "Manipulation Auditor",
+  "name": "Clairity",
+  "short_name": "Clairity",
   "description": "Reverse-engineer what social media algorithms are optimizing you for. See your manipulation profile in real time.",
   "version": "1.0.0",
   "permissions": [
@@ -29,7 +29,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Algorithmic Manipulation Auditor"
+    "default_title": "Clairity"
   },
   "background": {
     "service_worker": "background/background.js"
