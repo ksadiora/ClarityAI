@@ -69,13 +69,20 @@ function getDemoData() {
     });
   }
   const minutes = { youtube: 52, twitter: 28, tiktok: 41 };
+  // Weekly time (minutes) — downward trend: Week 1 (oldest) high → Week 4 (newest) low
+  const minutesByWeek = [
+    { weekLabel: 'Week 1', youtube: 180, twitter: 120, tiktok: 150 },
+    { weekLabel: 'Week 2', youtube: 150, twitter: 100, tiktok: 120 },
+    { weekLabel: 'Week 3', youtube: 120, twitter: 80, tiktok: 90 },
+    { weekLabel: 'Week 4', youtube: 90, twitter: 60, tiktok: 60 },
+  ];
   const tips = [
     { title: 'Turn off autoplay', body: 'On YouTube and TikTok, disable autoplay so you choose what to watch next instead of the algorithm.' },
     { title: 'Use "Not interested"', body: 'Tap "Not interested" on content you don\'t want. It trains the feed over time.' },
     { title: 'Prefer Subscriptions over Home', body: 'On YouTube, open Subscriptions first. On X and TikTok, check Following before For You.' },
     { title: 'Set a daily time cap', body: 'Use a timer or phone settings to limit time per app. Even a soft limit helps you scroll more intentionally.' },
   ];
-  return { history, minutes, tips };
+  return { history, minutes, minutesByWeek, tips };
 }
 
 function inferCategoryFromText(text) {
@@ -222,12 +229,13 @@ function formatMins(m) {
 }
 
 async function render() {
-  let history = [], minutes = {}, tips = [];
+  let history = [], minutes = {}, minutesByWeek = [], tips = [];
   const isDemo = new URLSearchParams(window.location.search).get('demo') === '1';
   if (isDemo) {
     const data = getDemoData();
     history = data.history || [];
     minutes = data.minutes || {};
+    minutesByWeek = Array.isArray(data.minutesByWeek) ? data.minutesByWeek : [];
     tips = Array.isArray(data.tips) ? data.tips : [];
   } else {
     try {
@@ -330,6 +338,65 @@ async function render() {
     </div>`;
   }).join('');
 
+  // Minutes per week line chart (3 lines: YouTube red, X blue, TikTok green)
+  const timePerWeekEl = document.getElementById('timePerWeekChart');
+  const TIME_WEEK_COLORS = { youtube: '#ef4444', twitter: '#3b82f6', tiktok: '#22c55e' };
+  if (timePerWeekEl) {
+    if (minutesByWeek.length >= 2) {
+      const platforms = ['youtube', 'twitter', 'tiktok'];
+      const allMins = minutesByWeek.flatMap(w => [w.youtube, w.twitter, w.tiktok].filter(Boolean));
+      const maxMins = Math.max(...allMins, 1);
+      const maxHours = Math.ceil(maxMins / 60) || 1;
+      const w = 440;
+      const h = 200;
+      const pad = { left: 40, right: 44, top: 16, bottom: 32 };
+      const x0 = pad.left;
+      const x1 = w - pad.right;
+      const y0 = pad.top;
+      const y1 = h - pad.bottom;
+      const yScale = (hours) => y1 - (hours / maxHours) * (y1 - y0);
+      const xScale = (i) => x0 + (i / Math.max(minutesByWeek.length - 1, 1)) * (x1 - x0);
+      const linePath = (key) => {
+        const pts = minutesByWeek.map((row, i) => {
+          const mins = row[key] || 0;
+          const hours = mins / 60;
+          return { x: xScale(i), y: yScale(hours) };
+        });
+        return pts.length ? pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') : '';
+      };
+      const xLabels = minutesByWeek.map((row, i) => `<text x="${xScale(i)}" y="${h - 8}" class="time-week-x-label" text-anchor="middle">${row.weekLabel || 'Week ' + (i + 1)}</text>`).join('');
+      const lines = platforms.map(key => `<path d="${linePath(key)}" class="time-week-line" stroke="${TIME_WEEK_COLORS[key]}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      const dots = platforms.flatMap(key =>
+        minutesByWeek.map((row, i) => {
+          const mins = row[key] || 0;
+          const hours = mins / 60;
+          const cx = xScale(i);
+          const cy = yScale(hours);
+          return `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${TIME_WEEK_COLORS[key]}" stroke="#12121a" stroke-width="1"/>`;
+        })
+      ).join('');
+      timePerWeekEl.innerHTML = `
+        <div class="time-week-legend">
+          <span class="time-week-legend-item"><span class="time-week-swatch" style="background:#ef4444"></span> YouTube</span>
+          <span class="time-week-legend-item"><span class="time-week-swatch" style="background:#3b82f6"></span> X</span>
+          <span class="time-week-legend-item"><span class="time-week-swatch" style="background:#22c55e"></span> TikTok</span>
+        </div>
+        <svg class="time-week-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+          <line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" class="time-week-axis"/>
+          <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" class="time-week-axis"/>
+          <text x="${x0 - 6}" y="${y0 + 4}" class="time-week-y-label" text-anchor="end">${maxHours}h</text>
+          <text x="${x0 - 6}" y="${y1 + 4}" class="time-week-y-label" text-anchor="end">0</text>
+          ${lines}
+          ${dots}
+          ${xLabels}
+        </svg>`;
+      timePerWeekEl.classList.remove('empty');
+    } else {
+      timePerWeekEl.innerHTML = '<div class="empty">Use the extension over several weeks to see time per platform here. In demo mode you can see a sample trend.</div>';
+      timePerWeekEl.classList.add('empty');
+    }
+  }
+
   const platformLabels = { youtube: 'YouTube', twitter: 'X', tiktok: 'TikTok' };
   const platformBars = document.getElementById('platformBars');
   platformBars.innerHTML = Object.entries(agg.byPlatform)
@@ -372,9 +439,9 @@ async function render() {
   } else {
     driftChart.classList.remove('empty');
     const weeks = [...agg.weekly].reverse();
-    const w = 420;
+    const w = 440;
     const h = 180;
-    const pad = { left: 36, right: 36, top: 12, bottom: 28 };
+    const pad = { left: 36, right: 44, top: 12, bottom: 28 };
     const x0 = pad.left;
     const x1 = w - pad.right;
     const y0 = pad.top;

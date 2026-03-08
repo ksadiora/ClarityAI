@@ -54,6 +54,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const emptyHintEl = document.getElementById('popupEmptyHint');
   if (emptyHintEl) emptyHintEl.style.display = aggregates?.totalItems ? 'none' : 'block';
 
+  const classificationDelayedHint = document.getElementById('classificationDelayedHint');
+  if (classificationDelayedHint) {
+    const delayed = await chrome.storage.local.get(['manipulation_auditor_classification_delayed']);
+    const payload = delayed.manipulation_auditor_classification_delayed;
+    const recent = payload?.setAt && (Date.now() - payload.setAt < 30 * 60 * 1000);
+    classificationDelayedHint.style.display = recent ? 'block' : 'none';
+  }
+
   document.getElementById('itemCount').textContent = aggregates?.totalItems ?? 0;
 
   const warnEl = document.getElementById('manipulationWarning');
@@ -101,11 +109,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   prefsLine.textContent = aggregates?.preferencesSummary || '';
   prefsLine.style.display = aggregates?.preferencesSummary ? 'block' : 'none';
 
+  const platformLabels = { youtube: 'YouTube', twitter: 'X', tiktok: 'TikTok' };
   const platformDiv = document.getElementById('platformScores');
   const byPlatform = aggregates?.byPlatform || {};
   platformDiv.innerHTML = Object.entries(byPlatform)
-    .map(([name, d]) => `<div class="platform-row">
-      <span>${name}</span>
+    .map(([key, d]) => `<div class="platform-row">
+      <span>${platformLabels[key] || key}</span>
       <span>${d.avgScore} avg</span>
     </div>`).join('') || '<div class="platform-row"><span>No data yet</span><span>Browse YouTube, X or TikTok</span></div>';
 

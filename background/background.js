@@ -6,6 +6,7 @@ const SUGGESTIONS_TTL = 10 * 60 * 1000; // 10 min - refresh as you view
 const SUGGESTIONS_MIN_NEW = 3; // regenerate if 3+ new items since last suggestion
 const MAX_HISTORY = 500;
 const SETTINGS_KEY = 'manipulation_auditor_settings';
+const CLASSIFICATION_ERROR_KEY = 'manipulation_auditor_classification_delayed';
 const TICK_INTERVAL = 10000; // 10 seconds
 
 function getPlatformFromUrl(url) {
@@ -339,13 +340,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const provider = settings.provider || 'gemini';
       const opts = { isAdSlot: !!msg.isAd, title: msg.title, description: msg.description };
       let classification = null;
+      let apiSucceeded = false;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           classification = await classifyWithAPI(msg.content || contentForFallback, apiKey, provider, opts);
-          if (classification) break;
+          if (classification) {
+            apiSucceeded = true;
+            await chrome.storage.local.remove([CLASSIFICATION_ERROR_KEY]);
+            break;
+          }
         } catch (e) {
-          if (attempt === 3) classification = defaultClassification;
-          else await new Promise((r) => setTimeout(r, 400 * attempt));
+          if (attempt === 3) {
+            classification = defaultClassification;
+            await chrome.storage.local.set({ [CLASSIFICATION_ERROR_KEY]: { setAt: Date.now() } });
+          } else {
+            await new Promise((r) => setTimeout(r, 400 * attempt));
+          }
         }
       }
       if (!classification) classification = defaultClassification;
@@ -418,16 +428,45 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 function inferCategoryFromText(text) {
   const t = (text || '').toLowerCase();
-  if (/\bnews\b|breaking|headline|reporter|cnn|fox/i.test(t)) return 'news';
-  if (/\bgame|gaming|playthrough|walkthrough|minecraft|fortnite|gamer\b/i.test(t)) return 'gaming';
+  if (/\bnews\b|breaking|headline|reporter|cnn|fox|bbc|reuters/i.test(t)) return 'news';
+  if (/\bgame|gaming|playthrough|walkthrough|minecraft|fortnite|gamer\b|esports|twitch/i.test(t)) return 'gaming';
+  if (/\bdiy\b|craft\b|knitting|sewing\b|woodwork|handmade/i.test(t)) return 'diy';
   if (/\bhow to|tutorial|learn|step by step|guide\b/i.test(t)) return 'how_to';
-  if (/\bcomedy|funny|laugh|joke\b/i.test(t)) return 'comedy';
-  if (/\bmusic|song|album|lyrics|artist\b/i.test(t)) return 'music';
-  if (/\bsport|nba|nfl|soccer|football|basketball\b/i.test(t)) return 'sports';
-  if (/\btech|programming|coding|software|developer\b/i.test(t)) return 'tech';
-  if (/\beducation|school|study|course|science\b/i.test(t)) return 'education';
-  if (/\blifestyle|fitness|recipe|cooking|travel|vlog|ootd|outfit\b/i.test(t)) return 'lifestyle';
-  if (/\bpolitics|democrat|republican|election\b/i.test(t)) return 'politics';
+  if (/\bcomedy|funny|laugh|joke\b|stand.?up|sketch\b/i.test(t)) return 'comedy';
+  if (/\bmusic|song|album|lyrics|artist\b|spotify|playlist|cover\s+of|music video/i.test(t)) return 'music';
+  if (/\bsport|nba|nfl|soccer|football|basketball|baseball|tennis|olympics|workout\b/i.test(t)) return 'sports';
+  if (/\btech|programming|coding|software|developer\b|apple\s+event|android|gadget/i.test(t)) return 'tech';
+  if (/\beducation|school|study|course\b|explained\b|learn\s+about/i.test(t)) return 'education';
+  if (/\bscience\b|physics|chemistry|biology|space\s+nasa|research\b|study\s+shows/i.test(t)) return 'science';
+  if (/\bpolitics|democrat|republican|election\b|congress|senate|vote\b/i.test(t)) return 'politics';
+  if (/\bbusiness\b|investing|stock\s+market|ceo|startup\b|entrepreneur/i.test(t)) return 'business';
+  if (/\bfinance\b|money\s+tip|budget\b|saving\s+money|invest\b/i.test(t)) return 'finance';
+  if (/\bcrypto|bitcoin|ethereum|blockchain|nft\b/i.test(t)) return 'crypto';
+  if (/\bdocumentary\b|doc\s+series|true\s+story|based on real/i.test(t)) return 'documentary';
+  if (/\btrue\s+crime\b|murder\b|serial\s+killer|crime\s+story|unsolved/i.test(t)) return 'true_crime';
+  if (/\breaction\b|react\s+to|watch(ing)?\s+with|first\s+time\s+watching/i.test(t)) return 'reaction';
+  if (/\bcommentary\b|hot\s+take|my\s+opinion|rant\b|discussion\s+video/i.test(t)) return 'commentary';
+  if (/\breview\b|unboxing|first\s+impression|unbox\b/i.test(t)) return 'review';
+  if (/\bunboxing|unbox\s+|unboxed/i.test(t)) return 'unboxing';
+  if (/\bbeauty\b|makeup|skincare|cosmetic|hair\s+tutorial|get\s+ready\s+with/i.test(t)) return 'beauty';
+  if (/\bfashion\b|outfit|ootd|style\s+tip|haul\b|try\s+on/i.test(t)) return 'fashion';
+  if (/\brecipe\b|cooking|food\b|chef\b|meal\b|eat\b|restaurant|baking\b/i.test(t)) return 'food';
+  if (/\bmotivation\b|motivational|inspirational|grind\b|hustle\b|mindset\b/i.test(t)) return 'motivation';
+  if (/\bself\s*improvement|productivity|habit\b|routine\b|morning\s+routine/i.test(t)) return 'self_improvement';
+  if (/\bmeme\b|memes\b|dank\b|viral\s+video|trend\s+on/i.test(t)) return 'memes';
+  if (/\bdance\b|choreography|tiktok\s+dance|dancing\b/i.test(t)) return 'dance';
+  if (/\bart\b|drawing|painting|digital\s+art|artist\s+draws/i.test(t)) return 'art';
+  if (/\bhistory\b|historical|ww2|world\s+war|ancient\b|medieval/i.test(t)) return 'history';
+  if (/\bphilosophy|philosophical|existential|meaning\s+of\s+life/i.test(t)) return 'philosophy';
+  if (/\basmr\b|whisper|satisfying\s+sound|soft\s+spoken/i.test(t)) return 'asmr';
+  if (/\bfilm\b|movie\b|cinema|box\s+office|film\s+review/i.test(t)) return 'film';
+  if (/\btv\s+show|series\b|netflix|episode\b|season\s+\d|recap\b/i.test(t)) return 'tv';
+  if (/\brelationship\b|dating\b|breakup\b|love\s+advice|marriage\b/i.test(t)) return 'relationship';
+  if (/\bstorytime\b|story\s+time|my\s+story|what\s+happened\s+to\s+me/i.test(t)) return 'storytime';
+  if (/\btravel\b|vacation|trip\s+to|travel\s+vlog|backpacking/i.test(t)) return 'travel';
+  if (/\bfitness\b|gym\b|workout\b|exercise\b|weight\s+loss|muscle\b/i.test(t)) return 'fitness';
+  if (/\blifestyle|vlog\b|day\s+in\s+my\s+life|ootd|routine\b|recipe|cooking/i.test(t)) return 'lifestyle';
+  if (/\bdrama\b|dramatic|tea\b|spill\b|scandal\b|exposed\b/i.test(t)) return 'drama';
   return 'entertainment';
 }
 
@@ -444,7 +483,9 @@ function computeAggregates(history) {
     const p = item.platform || 'unknown';
     const c = item.classification || {};
     const m = c.manipulation_mechanic || 'neutral';
-    const cat = c.content_category || inferCategoryFromText(item.text);
+    const cat = (c.content_category && c.content_category !== 'other')
+      ? c.content_category
+      : inferCategoryFromText(item.text);
     const i = c.manipulation_intensity || 0;
     const age = now - (item.timestamp || 0);
     const recency = age < dayMs ? 2 : age < 7 * dayMs ? 1.5 : 1;
@@ -478,8 +519,20 @@ function computeAggregates(history) {
   else if (count && overallScore >= 35) scoreInterpretation = 'Your feed mixes calm and engagement-driven content.';
   else if (count && overallScore < 35) scoreInterpretation = 'Your feed leans toward calmer, more genuine content.';
 
+  const CATEGORY_LABELS = {
+    news: 'News', entertainment: 'Entertainment', education: 'Education', gaming: 'Gaming',
+    lifestyle: 'Lifestyle', comedy: 'Comedy', music: 'Music', sports: 'Sports', tech: 'Tech',
+    politics: 'Politics', how_to: 'How-to', vlog: 'Vlog', drama: 'Drama', science: 'Science',
+    business: 'Business', other: 'Other', documentary: 'Documentary', true_crime: 'True crime',
+    reaction: 'Reaction', commentary: 'Commentary', review: 'Reviews', beauty: 'Beauty',
+    fashion: 'Fashion', food: 'Food', finance: 'Finance', crypto: 'Crypto', motivation: 'Motivation',
+    memes: 'Memes', dance: 'Dance', art: 'Art', history: 'History', philosophy: 'Philosophy',
+    diy: 'DIY & crafts', asmr: 'ASMR', film: 'Film', tv: 'TV', self_improvement: 'Self-improvement',
+    relationship: 'Relationships', unboxing: 'Unboxing', storytime: 'Storytime', travel: 'Travel',
+    fitness: 'Fitness',
+  };
   const preferencesSummary = topCategories.length
-    ? `You're mostly seeing: ${topCategories.map(([n]) => n.replace(/_/g, ' ')).join(', ')}`
+    ? `You're mostly seeing: ${topCategories.slice(0, 3).map(([n]) => CATEGORY_LABELS[n] || n.replace(/_/g, ' ')).join(', ')}`
     : null;
 
   const manipulationWarning = overallScore >= 55 && count >= 5;

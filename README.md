@@ -11,7 +11,7 @@ Most people have no idea how much of their feed is chosen by algorithms (vs. peo
 ## Features
 
 - **Passive monitoring** — Runs silently on YouTube and Twitter/X, extracts feed metadata
-- **AI classification** — Scores each item (outrage, fear, curiosity gap, etc.) via Anthropic or OpenAI API
+- **AI classification** — Scores each item (outrage, fear, curiosity gap, etc.) via Gemini API
 - **Real-time overlay** — Color-coded tags on each feed item showing its manipulation mechanic
 - **Manipulation score** — Badge shows 0–100 intensity (green → yellow → red)
 - **Weekly dashboard** — Platform comparison, mechanic breakdown, drift over time
@@ -22,20 +22,23 @@ Most people have no idea how much of their feed is chosen by algorithms (vs. peo
    - Open `chrome://extensions`
    - Enable "Developer mode"
    - Click "Load unpacked"
-   - Select the `Hacktj` folder
+   - Select the `HackTJ13` folder (or this project's root folder)
 
 2. **Optional: Add API key for AI classification**
    - Click the extension icon → Settings
-   - Add your [Anthropic](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/api-keys) API key
+   - Add your [Google AI (Gemini)](https://aistudio.google.com/apikey) API key
    - Without it, the extension uses heuristic fallbacks (less accurate)
+   - The key is saved locally and persists across reloads — you don't need to re-enter it when you reload the extension.
 
 ## Usage
 
-1. Browse **YouTube** or **X (Twitter)** normally
+1. Browse **YouTube**, **X (Twitter)**, or **TikTok** normally
 2. The extension scrapes visible feed items every 5 seconds
 3. Each item is classified and stored locally
 4. Click the extension icon for real-time score and stats
 5. Open **Full Dashboard** for weekly profile, platform comparison, drift chart
+
+**Demo:** To show a full profile without browsing, open the dashboard and add `?demo=1` to the URL (e.g. `.../dashboard/dashboard.html?demo=1`).
 
 ## Supported platforms
 
@@ -47,13 +50,15 @@ Most people have no idea how much of their feed is chosen by algorithms (vs. peo
 
 - Chrome Extension Manifest V3
 - Content scripts for DOM scraping (no API access needed)
-- Anthropic Claude or OpenAI GPT-4o-mini for classification
+- Gemini API for classification
 - `chrome.storage.local` for history (max 500 items)
+
+**Privacy:** Your data stays on your device; only the AI provider (e.g. Google) sees content when you add an API key.
 
 ## Project structure
 
 ```
-Hacktj/
+HackTJ13/
 ├── manifest.json
 ├── background/background.js    # Storage, API calls, badge
 ├── content/
